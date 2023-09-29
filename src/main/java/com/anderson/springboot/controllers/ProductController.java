@@ -16,7 +16,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
-
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 import com.anderson.springboot.ProductRepository;
 import com.anderson.springboot.dtos.ProductRecordDto;
 import com.anderson.springboot.models.ProductModel;
@@ -38,7 +39,14 @@ public class ProductController {
 	 
 	 @GetMapping("/products")
 	 public ResponseEntity<List<ProductModel>> getAllProducts(){
-		 return ResponseEntity.status(HttpStatus.OK).body(productRepository.findAll());
+		 List<ProductModel> productList=productRepository.findAll();
+		 if(!productList.isEmpty()) {
+			 for(ProductModel product: productList) {
+				 UUID id=product.getIdProduct();
+				 product.add(linkTo(methodOn(ProductController.class).getOneProduct(id)).withSelfRel());
+			 }
+		 }
+		 return ResponseEntity.status(HttpStatus.OK).body(productList);
 		 
 	 }
 	 @GetMapping("/products/{id}")
@@ -47,6 +55,7 @@ public class ProductController {
 		 if(product0.isEmpty()) {
 			 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Product not found.");
 			 }
+		 product0.get().add(linkTo(methodOn(ProductController.class).getAllProducts()).withRel("Product List"));
 		 return ResponseEntity.status(HttpStatus.OK).body(product0.get());
 	 }
 	 @PutMapping("/products/{id}")
